@@ -1,0 +1,60 @@
+name: CI for ref-card-01 - test, build and publish to Docker Hub
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21 and cache Maven local repository
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/docker
+            ~/.docker
+          key: ${{ runner.os }}-docker-cache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-docker-cache-
+
+      - name: Build and run Maven tests
+        run: |
+          mvn -B clean test package
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:cache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:cache,mode=max
+
+      - name: Output image name
+        run: echo "Image pushed: ${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:${{ github.sha }}"
