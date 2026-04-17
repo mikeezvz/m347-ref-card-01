@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      DOCKERHUB_IMAGE: ${{ secrets.DOCKERHUB_IMAGE && secrets.DOCKERHUB_IMAGE || format('%s/app-refcard-01', secrets.DOCKERHUB_USERNAME) }}
 
     steps:
       - name: Checkout repository
@@ -50,11 +52,10 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:${{ github.sha }}
-          cache-from: "type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:cache"
-          cache-to: "type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:cache,mode=max"
+          tags:
+            - ${{ env.DOCKERHUB_IMAGE }}:latest
+          cache-from: "type=registry,ref=${{ env.DOCKERHUB_IMAGE }}:cache"
+          cache-to: "type=registry,ref=${{ env.DOCKERHUB_IMAGE }}:cache,mode=max"
 
       - name: Output image name
-        run: echo "Image pushed: ${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:${{ github.sha }}"
+        run: echo "Image pushed: ${{ env.DOCKERHUB_IMAGE }}:latest"
