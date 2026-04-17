@@ -53,8 +53,8 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:cache
-          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:cache,mode=max
+          cache-from: "type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:cache"
+          cache-to: "type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:cache,mode=max"
 
       - name: Output image name
         run: echo "Image pushed: ${{ secrets.DOCKERHUB_USERNAME }}/app-refcard-01:${{ github.sha }}"
