@@ -1,61 +1,39 @@
-name: CI for ref-card-01 - test, build and publish to Docker Hub
+name: CI
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch: {}
+    branches:
+      - main
 
 jobs:
-  build-and-publish:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+
     env:
-      DOCKERHUB_IMAGE: ${{ secrets.DOCKERHUB_IMAGE}}
+      DOCKERHUB_IMAGE: ${{ secrets.DOCKERHUB_IMAGE }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java 21 and cache Maven local repository
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
-          cache: 'maven'
+          java-version: 21
 
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/docker
-            ~/.docker
-          key: ${{ runner.os }}-docker-cache-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-docker-cache-
+      - name: Build with Maven
+        run: mvn clean package
 
-      - name: Build and run Maven tests
-        run: |
-          mvn -B clean test package
-
-      - name: Log in to Docker Hub
+      - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
           push: true
-          tags:
-            - ${{ env.DOCKERHUB_IMAGE }}:latest
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_IMAGE }}:cache
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_IMAGE }}:cache,mode=max
-
-      - name: Output image name
-        run: echo "Image pushed: ${{ env.DOCKERHUB_IMAGE }}:latest"
+          tags: ${{ env.DOCKERHUB_IMAGE }}:latest
